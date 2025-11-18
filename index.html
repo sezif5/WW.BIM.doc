@@ -329,23 +329,8 @@
 </main>
 
 <script>
-    // Список .md в папке /markdownFiles
-    const markdownFiles = [
-        { id: "menedzher-listov", title: "МенеджерЛистов", file: "markdownFiles/МенеджерЛистов.md" },
-        { id: "nomer-sekcii", title: "Номер секции", file: "markdownFiles/Номер секции.md" },
-        { id: "otmetki-urovney", title: "Отметки уровней", file: "markdownFiles/Отметки уровней.md" },
-        { id: "peresecheniya", title: "Пересечения", file: "markdownFiles/Пересечения.md" },
-        { id: "proverka", title: "Проверка", file: "markdownFiles/Проверка.md" },
-        { id: "svyazi-po-rn", title: "Связи по РН", file: "markdownFiles/Связи по РН.md" },
-        { id: "soedinit-konnektory", title: "Соединить коннекторы", file: "markdownFiles/Соединить коннекторы.md" },
-        { id: "specifikaciya", title: "Спецификация", file: "markdownFiles/Спецификация.md" },
-        { id: "superfilter", title: "Суперфильтр", file: "markdownFiles/Суперфильтр.md" },
-        { id: "export-nwc", title: "Экспорт NWC", file: "markdownFiles/Экспорт NWC.md" },
-        { id: "export-rvt", title: "Экспорт RVT", file: "markdownFiles/Экспорт RVT.md" },
-        { id: "elementy-vnutri-pomescheniya", title: "Элементы внутри помещения", file: "markdownFiles/Элементы внутри помещения.md" },
-        { id: "id-file", title: "ID", file: "markdownFiles/ID.md" },
-        { id: "kubiki-vidimost", title: "Кубики Видимость", file: "markdownFiles/Кубики Видимость.md" }
-    ];
+    // [Непроверено] Глобальный список файлов — заполняется из JSON
+    let markdownFiles = [];
 
     const searchInput = document.getElementById("search-input");
     const resultsEl = document.getElementById("results");
@@ -357,8 +342,6 @@
 
     let allLoaded = false;
     let isLoading = false;
-
-    markdownFiles.forEach(f => { f.content = ""; });
 
     function escapeHtml(str) {
         return str
@@ -372,10 +355,52 @@
         resultsMetaEl.textContent = "";
     }
 
-    // Список всех файлов (по умолчанию при пустом поиске)
+    // [Непроверено] Загрузка конфигурации из markdownFiles/index.json
+    function loadConfig() {
+        return fetch("markdownFiles/index.json")
+            .then(resp => {
+                if (!resp.ok) throw new Error("Не удалось загрузить index.json");
+                return resp.json();
+            })
+            .then(list => {
+                markdownFiles = (list || []).map(item => {
+                    // item может быть строкой или объектом
+                    if (typeof item === "string") {
+                        return createFileEntry({ file: item });
+                    }
+                    return createFileEntry(item);
+                });
+            })
+            .catch(err => {
+                console.error("Ошибка загрузки конфигурации:", err);
+                markdownFiles = [];
+            });
+    }
+
+    function createFileEntry(item) {
+        const fileName = item.file || "";
+        const title =
+            item.title ||
+            fileName.replace(/\.md$/i, "");
+        const id =
+            item.id ||
+            fileName.replace(/\.md$/i, "");
+        const path = fileName.startsWith("markdownFiles/")
+            ? fileName
+            : "markdownFiles/" + fileName;
+
+        return {
+            id: id,
+            title: title,
+            file: path,
+            content: ""
+        };
+    }
+
+    // [Непроверено] Список всех файлов (по умолчанию при пустом поиске)
     function renderDefaultList() {
         if (!markdownFiles.length) {
-            setResultsEmpty("Файлы не сконфигурированы.");
+            setResultsEmpty("Не удалось загрузить список Markdown файлов.");
             return;
         }
 
@@ -458,6 +483,11 @@
             return;
         }
 
+        if (!markdownFiles.length) {
+            setResultsEmpty("Список файлов ещё не загружен.");
+            return;
+        }
+
         const lowerQuery = query.toLowerCase();
         const results = [];
 
@@ -528,8 +558,11 @@
     function ensureLoadedAndSearch() {
         const query = searchInput.value.trim();
         if (!query) {
-            // Для пустой строки сразу отображаем список, без загрузки содержимого
             renderDefaultList();
+            return;
+        }
+        if (!markdownFiles.length) {
+            setResultsEmpty("Список файлов ещё не загружен.");
             return;
         }
         if (allLoaded) {
@@ -564,7 +597,6 @@
         if (allLoaded) {
             show();
         } else if (!file.content) {
-            // лениво грузим все файлы перед первым просмотром
             loadAllFiles().then(show);
         } else {
             show();
@@ -582,18 +614,24 @@
 
     // Инициализация
     (function init() {
-        renderDefaultList();
-
-        // Если в URL передан ?file=..., открываем этот файл
-        const url = new URL(window.location.href);
-        const fileId = url.searchParams.get("file");
-        if (fileId) {
-            const file = findFileById(fileId);
-            if (file) {
-                // грузим и показываем нужный файл
-                loadAllFiles().then(() => openFile(file, false));
+        loadConfig().then(() => {
+            if (!markdownFiles.length) {
+                setResultsEmpty("Не удалось загрузить список Markdown файлов.");
+                return;
             }
-        }
+
+            renderDefaultList();
+
+            // Если в URL передан ?file=..., открываем этот файл
+            const url = new URL(window.location.href);
+            const fileId = url.searchParams.get("file");
+            if (fileId) {
+                const file = findFileById(fileId);
+                if (file) {
+                    loadAllFiles().then(() => openFile(file, false));
+                }
+            }
+        });
     })();
 </script>
 </body>
