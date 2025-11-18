@@ -36,22 +36,8 @@
         .topbar {
             height: 56px;
             padding: 0 32px;
-            display: flex;
-            align-items: center;
             border-bottom: 1px solid var(--border-subtle);
             background: linear-gradient(to bottom, #030712, #020617);
-        }
-
-        .topbar-title {
-            font-weight: 600;
-            letter-spacing: 0.18em;
-            font-size: 14px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        .topbar-title span {
-            color: var(--accent);
         }
 
         .app-shell {
@@ -81,12 +67,6 @@
 
         .page-title span {
             color: var(--accent);
-        }
-
-        .page-subtitle {
-            margin-top: 6px;
-            font-size: 13px;
-            color: var(--text-muted);
         }
 
         .search-row {
@@ -136,37 +116,13 @@
             pointer-events: none;
         }
 
-        .status-pill {
-            padding: 6px 11px;
-            border-radius: 999px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            border: 1px solid var(--border-subtle);
-            background: radial-gradient(circle at top left,
-                rgba(59, 130, 246, 0.16),
-                rgba(15, 23, 42, 0.9));
-            color: var(--text-muted);
-            white-space: nowrap;
-        }
-
-        .status-dot {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            margin-right: 6px;
-            background: radial-gradient(circle, #60a5fa, #1d4ed8);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
-        }
-
         .results {
             margin-top: 22px;
             border-radius: 14px;
             border: 1px solid rgba(15, 23, 42, 0.9);
             background: linear-gradient(to bottom right, #020617, #020617 45%, #020617);
             padding: 12px;
-            max-height: calc(100vh - 220px);
+            max-height: calc(100vh - 260px);
             overflow: auto;
         }
 
@@ -238,11 +194,10 @@
             color: #6b7280;
         }
 
-        .hidden {
-            display: none;
-        }
+        /* Просмотр файла */
 
         .viewer {
+            margin-top: 22px;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -255,32 +210,6 @@
             flex-wrap: wrap;
         }
 
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border-radius: 999px;
-            border: 1px solid var(--border-subtle);
-            background-color: rgba(15, 23, 42, 0.92);
-            color: var(--text-muted);
-            font-size: 13px;
-            padding: 6px 11px;
-            cursor: pointer;
-            transition: border-color 0.12s ease, background-color 0.12s ease,
-                color 0.12s ease, transform 0.08s ease;
-        }
-
-        .back-button:hover {
-            border-color: var(--accent);
-            background-color: #020617;
-            color: var(--text-primary);
-            transform: translateY(-0.5px);
-        }
-
-        .back-button-icon {
-            font-size: 14px;
-        }
-
         .viewer-title {
             font-size: 15px;
             font-weight: 600;
@@ -291,7 +220,7 @@
             border: 1px solid var(--border-subtle);
             background-color: #020617;
             padding: 20px 22px 26px;
-            max-height: calc(100vh - 210px);
+            max-height: calc(100vh - 260px);
             overflow: auto;
         }
 
@@ -375,6 +304,10 @@
                 font-size: 24px;
             }
 
+            .results {
+                max-height: none;
+            }
+
             .viewer-body {
                 max-height: none;
             }
@@ -382,19 +315,13 @@
     </style>
 </head>
 <body>
-<header class="topbar">
-    <div class="topbar-title"><span>WW.BIM</span>&nbsp;/&nbsp;REPORTS</div>
-</header>
+<header class="topbar"></header>
 
 <main class="app-shell">
     <section class="card">
-        <!-- Экран поиска -->
         <div id="search-view">
             <div class="page-header">
                 <div class="page-title"><span>WW.</span>BIM</div>
-                <div class="page-subtitle">
-                    Центр отчётов в формате Markdown: ищите по названиям и содержимому файлов.
-                </div>
             </div>
 
             <div class="search-row">
@@ -408,35 +335,29 @@
                         autocomplete="off"
                     />
                 </div>
-
-                <div class="status-pill">
-                    <span class="status-dot"></span>
-                    Markdown&nbsp;/&nbsp;Navisworks отчёты
-                </div>
             </div>
 
             <div id="results" class="results">
                 <div class="results-empty">
-                    <div>Начните с ввода запроса в строке поиска.</div>
-                    <div style="margin-top:8px;">Например: <strong>коллизии</strong> или <strong>ifc</strong>.</div>
+                    Загрузка markdown-файлов…
                 </div>
             </div>
 
             <div id="results-meta" class="results-meta"></div>
         </div>
 
-        <!-- Экран просмотра -->
-        <div id="viewer-view" class="viewer hidden">
+        <!-- Просмотр файла -->
+        <div id="viewer-view" class="viewer">
             <div class="viewer-toolbar">
-                <button id="back-button" class="back-button" type="button">
-                    <span class="back-button-icon">←</span>
-                    <span>Назад к поиску</span>
-                </button>
-                <div id="viewer-title" class="viewer-title"></div>
+                <div id="viewer-title" class="viewer-title">Файл не выбран</div>
             </div>
 
             <div class="viewer-body">
-                <article id="viewer-content" class="markdown-body"></article>
+                <article id="viewer-content" class="markdown-body">
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Выберите файл в списке или через строку поиска, чтобы открыть его здесь.
+                    </p>
+                </article>
             </div>
         </div>
     </section>
@@ -464,12 +385,8 @@
     const searchInput = document.getElementById("search-input");
     const resultsEl = document.getElementById("results");
     const resultsMetaEl = document.getElementById("results-meta");
-
-    const searchView = document.getElementById("search-view");
-    const viewerView = document.getElementById("viewer-view");
     const viewerTitleEl = document.getElementById("viewer-title");
     const viewerContentEl = document.getElementById("viewer-content");
-    const backButton = document.getElementById("back-button");
 
     let allLoaded = false;
     let isLoading = false;
@@ -514,125 +431,4 @@
     function highlightSnippet(text, query) {
         if (!query) return escapeHtml(text);
         const lowerText = text.toLowerCase();
-        const lowerQuery = query.toLowerCase();
-        const idx = lowerText.indexOf(lowerQuery);
-        if (idx === -1) return escapeHtml(text);
-
-        const before = text.slice(0, idx);
-        const match = text.slice(idx, idx + query.length);
-        const after = text.slice(idx + query.length);
-
-        return (
-            escapeHtml(before) +
-            '<span class="result-highlight">' + escapeHtml(match) + "</span>" +
-            escapeHtml(after)
-        );
-    }
-
-    function performSearch() {
-        const query = searchInput.value.trim();
-        if (!query) {
-            setResultsPlaceholder(
-                '<div>Начните с ввода запроса в строке поиска.</div>' +
-                '<div style="margin-top:8px;">Например: <strong>коллизии</strong> или <strong>ifc</strong>.</div>'
-            );
-            return;
-        }
-
-        const lowerQuery = query.toLowerCase();
-        const results = [];
-
-        markdownFiles.forEach(file => {
-            const title = file.title || file.file;
-            const content = file.content || "";
-
-            const inTitle = title.toLowerCase().includes(lowerQuery);
-            const idx = content.toLowerCase().indexOf(lowerQuery);
-
-            if (inTitle || idx !== -1) {
-                let snippet = "";
-                if (idx !== -1) {
-                    const start = Math.max(0, idx - 60);
-                    const end = Math.min(content.length, idx + 160);
-                    snippet = content.slice(start, end);
-                    if (start > 0) snippet = "…" + snippet;
-                    if (end < content.length) snippet = snippet + "…";
-                } else {
-                    snippet = content.slice(0, 160);
-                    if (content.length > 160) snippet += "…";
-                }
-
-                results.push({ file, title, snippet });
-            }
-        });
-
-        if (!results.length) {
-            setResultsPlaceholder(
-                'Ничего не найдено по запросу «<strong>' + escapeHtml(query) + "</strong>»."
-            );
-            return;
-        }
-
-        resultsEl.innerHTML = "";
-        results.forEach(({ file, title, snippet }) => {
-            const item = document.createElement("div");
-            item.className = "result-item";
-
-            const titleRow = document.createElement("div");
-            titleRow.className = "result-title-row";
-
-            const titleEl = document.createElement("div");
-            titleEl.className = "result-title";
-            titleEl.textContent = title;
-
-            const pathEl = document.createElement("div");
-            pathEl.className = "result-path";
-            pathEl.textContent = file.file;
-
-            titleRow.appendChild(titleEl);
-            titleRow.appendChild(pathEl);
-
-            const snippetEl = document.createElement("div");
-            snippetEl.className = "result-snippet";
-            snippetEl.innerHTML = highlightSnippet(snippet, query);
-
-            item.appendChild(titleRow);
-            item.appendChild(snippetEl);
-
-            item.addEventListener("click", () => openFile(file));
-
-            resultsEl.appendChild(item);
-        });
-
-        resultsMetaEl.textContent = "Найдено совпадений: " + results.length;
-    }
-
-    function ensureLoadedAndSearch() {
-        if (allLoaded) {
-            performSearch();
-        } else if (!isLoading) {
-            loadAllFiles().then(performSearch);
-        }
-    }
-
-    function openFile(file) {
-        viewerTitleEl.textContent = file.title || file.file;
-        const md = file.content || "";
-        const html = marked.parse(md);
-        viewerContentEl.innerHTML = html;
-
-        searchView.classList.add("hidden");
-        viewerView.classList.remove("hidden");
-    }
-
-    backButton.addEventListener("click", () => {
-        viewerView.classList.add("hidden");
-        searchView.classList.remove("hidden");
-    });
-
-    searchInput.addEventListener("input", () => {
-        ensureLoadedAndSearch();
-    });
-</script>
-</body>
-</html>
+        const lower
