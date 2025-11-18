@@ -28,14 +28,13 @@
             margin: 0;
             min-height: 100vh;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-                sans-serif;
+            sans-serif;
             background: radial-gradient(circle at top, #050b17 0, #020617 40%, #000 100%);
             color: var(--text-primary);
         }
 
         .topbar {
-            height: 56px;
-            padding: 0 32px;
+            height: 40px;
             border-bottom: 1px solid var(--border-subtle);
             background: linear-gradient(to bottom, #030712, #020617);
         }
@@ -93,7 +92,7 @@
             font-size: 14px;
             outline: none;
             transition: border-color 0.15s ease, box-shadow 0.15s ease,
-                background-color 0.15s ease;
+            background-color 0.15s ease;
         }
 
         .search-input::placeholder {
@@ -127,14 +126,9 @@
         }
 
         .results-empty {
-            padding: 40px 18px;
-            text-align: center;
+            padding: 16px 18px;
             color: var(--text-muted);
             font-size: 13px;
-        }
-
-        .results-empty strong {
-            color: var(--accent);
         }
 
         .result-item {
@@ -147,7 +141,7 @@
             flex-direction: column;
             gap: 4px;
             transition: border-color 0.12s ease, background-color 0.12s ease,
-                transform 0.08s ease;
+            transform 0.08s ease;
         }
 
         .result-item + .result-item {
@@ -194,20 +188,15 @@
             color: #6b7280;
         }
 
-        /* Просмотр файла */
+        .hidden {
+            display: none;
+        }
 
         .viewer {
             margin-top: 22px;
             display: flex;
             flex-direction: column;
             gap: 12px;
-        }
-
-        .viewer-toolbar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
         }
 
         .viewer-title {
@@ -240,17 +229,9 @@
             font-weight: 600;
         }
 
-        .markdown-body h1 {
-            font-size: 24px;
-        }
-
-        .markdown-body h2 {
-            font-size: 20px;
-        }
-
-        .markdown-body h3 {
-            font-size: 17px;
-        }
+        .markdown-body h1 { font-size: 24px; }
+        .markdown-body h2 { font-size: 20px; }
+        .markdown-body h3 { font-size: 17px; }
 
         .markdown-body p {
             margin: 6px 0 10px;
@@ -304,10 +285,6 @@
                 font-size: 24px;
             }
 
-            .results {
-                max-height: none;
-            }
-
             .viewer-body {
                 max-height: none;
             }
@@ -319,45 +296,33 @@
 
 <main class="app-shell">
     <section class="card">
-        <div id="search-view">
-            <div class="page-header">
-                <div class="page-title"><span>WW.</span>BIM</div>
-            </div>
-
-            <div class="search-row">
-                <div class="search-input-wrap">
-                    <span class="search-icon">🔍</span>
-                    <input
-                        id="search-input"
-                        class="search-input"
-                        type="search"
-                        placeholder="Поиск по названию и тексту .md файлов…"
-                        autocomplete="off"
-                    />
-                </div>
-            </div>
-
-            <div id="results" class="results">
-                <div class="results-empty">
-                    Загрузка markdown-файлов…
-                </div>
-            </div>
-
-            <div id="results-meta" class="results-meta"></div>
+        <div class="page-header">
+            <div class="page-title"><span>WW.</span>BIM</div>
         </div>
 
-        <!-- Просмотр файла -->
-        <div id="viewer-view" class="viewer">
-            <div class="viewer-toolbar">
-                <div id="viewer-title" class="viewer-title">Файл не выбран</div>
+        <!-- Поиск -->
+        <div class="search-row">
+            <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input
+                    id="search-input"
+                    class="search-input"
+                    type="search"
+                    placeholder="Поиск по названию и тексту .md файлов…"
+                    autocomplete="off"
+                />
             </div>
+        </div>
 
+        <!-- Результаты -->
+        <div id="results" class="results"></div>
+        <div id="results-meta" class="results-meta"></div>
+
+        <!-- Просмотр Markdown -->
+        <div id="viewer-view" class="viewer hidden">
+            <div id="viewer-title" class="viewer-title"></div>
             <div class="viewer-body">
-                <article id="viewer-content" class="markdown-body">
-                    <p style="color: var(--text-muted); font-size: 13px;">
-                        Выберите файл в списке или через строку поиска, чтобы открыть его здесь.
-                    </p>
-                </article>
+                <article id="viewer-content" class="markdown-body"></article>
             </div>
         </div>
     </section>
@@ -385,6 +350,8 @@
     const searchInput = document.getElementById("search-input");
     const resultsEl = document.getElementById("results");
     const resultsMetaEl = document.getElementById("results-meta");
+
+    const viewerView = document.getElementById("viewer-view");
     const viewerTitleEl = document.getElementById("viewer-title");
     const viewerContentEl = document.getElementById("viewer-content");
 
@@ -393,14 +360,59 @@
 
     markdownFiles.forEach(f => { f.content = ""; });
 
-    function setResultsPlaceholder(html) {
-        resultsEl.innerHTML = '<div class="results-empty">' + html + "</div>";
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+
+    function setResultsEmpty(textHtml) {
+        resultsEl.innerHTML = '<div class="results-empty">' + textHtml + "</div>";
         resultsMetaEl.textContent = "";
+    }
+
+    // Список всех файлов (по умолчанию при пустом поиске)
+    function renderDefaultList() {
+        if (!markdownFiles.length) {
+            setResultsEmpty("Файлы не сконфигурированы.");
+            return;
+        }
+
+        resultsEl.innerHTML = "";
+        const sorted = [...markdownFiles].sort((a, b) =>
+            (a.title || "").localeCompare(b.title || "", "ru")
+        );
+
+        sorted.forEach(file => {
+            const item = document.createElement("div");
+            item.className = "result-item";
+
+            const titleRow = document.createElement("div");
+            titleRow.className = "result-title-row";
+
+            const titleEl = document.createElement("div");
+            titleEl.className = "result-title";
+            titleEl.textContent = file.title || file.file;
+
+            const pathEl = document.createElement("div");
+            pathEl.className = "result-path";
+            pathEl.textContent = file.file;
+
+            titleRow.appendChild(titleEl);
+            titleRow.appendChild(pathEl);
+            item.appendChild(titleRow);
+
+            item.addEventListener("click", () => openFile(file, true));
+            resultsEl.appendChild(item);
+        });
+
+        resultsMetaEl.textContent = "Всего файлов: " + sorted.length;
     }
 
     function loadAllFiles() {
         isLoading = true;
-        setResultsPlaceholder("Загрузка markdown-файлов…");
+        setResultsEmpty("Загрузка markdown-файлов…");
 
         const promises = markdownFiles.map(file =>
             fetch(file.file)
@@ -421,14 +433,168 @@
         });
     }
 
-    function escapeHtml(str) {
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-    }
-
     function highlightSnippet(text, query) {
         if (!query) return escapeHtml(text);
         const lowerText = text.toLowerCase();
-        const lower
+        const lowerQuery = query.toLowerCase();
+        const idx = lowerText.indexOf(lowerQuery);
+        if (idx === -1) return escapeHtml(text);
+
+        const before = text.slice(0, idx);
+        const match = text.slice(idx, idx + query.length);
+        const after = text.slice(idx + query.length);
+
+        return (
+            escapeHtml(before) +
+            '<span class="result-highlight">' + escapeHtml(match) + "</span>" +
+            escapeHtml(after)
+        );
+    }
+
+    function performSearch() {
+        const query = searchInput.value.trim();
+        if (!query) {
+            renderDefaultList();
+            return;
+        }
+
+        const lowerQuery = query.toLowerCase();
+        const results = [];
+
+        markdownFiles.forEach(file => {
+            const title = file.title || file.file;
+            const content = file.content || "";
+
+            const inTitle = title.toLowerCase().includes(lowerQuery);
+            const idx = content.toLowerCase().indexOf(lowerQuery);
+
+            if (inTitle || idx !== -1) {
+                let snippet = "";
+                if (idx !== -1) {
+                    const start = Math.max(0, idx - 60);
+                    const end = Math.min(content.length, idx + 160);
+                    snippet = content.slice(start, end);
+                    if (start > 0) snippet = "…" + snippet;
+                    if (end < content.length) snippet = snippet + "…";
+                } else {
+                    snippet = content.slice(0, 160);
+                    if (content.length > 160) snippet += "…";
+                }
+
+                results.push({ file, title, snippet });
+            }
+        });
+
+        if (!results.length) {
+            setResultsEmpty(
+                'Ничего не найдено по запросу «<strong>' + escapeHtml(query) + "</strong>»."
+            );
+            return;
+        }
+
+        resultsEl.innerHTML = "";
+        results.forEach(({ file, title, snippet }) => {
+            const item = document.createElement("div");
+            item.className = "result-item";
+
+            const titleRow = document.createElement("div");
+            titleRow.className = "result-title-row";
+
+            const titleEl = document.createElement("div");
+            titleEl.className = "result-title";
+            titleEl.textContent = title;
+
+            const pathEl = document.createElement("div");
+            pathEl.className = "result-path";
+            pathEl.textContent = file.file;
+
+            titleRow.appendChild(titleEl);
+            titleRow.appendChild(pathEl);
+
+            const snippetEl = document.createElement("div");
+            snippetEl.className = "result-snippet";
+            snippetEl.innerHTML = highlightSnippet(snippet, query);
+
+            item.appendChild(titleRow);
+            item.appendChild(snippetEl);
+
+            item.addEventListener("click", () => openFile(file, true));
+            resultsEl.appendChild(item);
+        });
+
+        resultsMetaEl.textContent = "Найдено совпадений: " + results.length;
+    }
+
+    function ensureLoadedAndSearch() {
+        const query = searchInput.value.trim();
+        if (!query) {
+            // Для пустой строки сразу отображаем список, без загрузки содержимого
+            renderDefaultList();
+            return;
+        }
+        if (allLoaded) {
+            performSearch();
+        } else if (!isLoading) {
+            loadAllFiles().then(performSearch);
+        }
+    }
+
+    function updateFileInUrl(fileId) {
+        const url = new URL(window.location.href);
+        if (fileId) {
+            url.searchParams.set("file", fileId);
+        } else {
+            url.searchParams.delete("file");
+        }
+        history.replaceState(null, "", url.toString());
+    }
+
+    function openFile(file, updateUrl) {
+        function show() {
+            viewerTitleEl.textContent = file.title || file.file;
+            const md = file.content || "";
+            const html = marked.parse(md);
+            viewerContentEl.innerHTML = html;
+            viewerView.classList.remove("hidden");
+            if (updateUrl) {
+                updateFileInUrl(file.id);
+            }
+        }
+
+        if (allLoaded) {
+            show();
+        } else if (!file.content) {
+            // лениво грузим все файлы перед первым просмотром
+            loadAllFiles().then(show);
+        } else {
+            show();
+        }
+    }
+
+    function findFileById(id) {
+        return markdownFiles.find(f => f.id === id) || null;
+    }
+
+    // Обработчики
+    searchInput.addEventListener("input", () => {
+        ensureLoadedAndSearch();
+    });
+
+    // Инициализация
+    (function init() {
+        renderDefaultList();
+
+        // Если в URL передан ?file=..., открываем этот файл
+        const url = new URL(window.location.href);
+        const fileId = url.searchParams.get("file");
+        if (fileId) {
+            const file = findFileById(fileId);
+            if (file) {
+                // грузим и показываем нужный файл
+                loadAllFiles().then(() => openFile(file, false));
+            }
+        }
+    })();
+</script>
+</body>
+</html>
